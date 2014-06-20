@@ -45,26 +45,56 @@ int main(void) {
 		_potencia_nao_respondeu = ler_agente_potencia(&corrente, &tensao);
 
 		if (soltou_correia()) {
-			enviar_mensagem_supervisor("Estorrou correia");
+			enviar_mensagem_supervisor("Estourou correia");
 		}
 
-		//////////TEMPORARIO - TESTE DO FREIO E ALERTA//////
-		if (rpm > 800) {
-			ALERT_ON;
-			if (rpm > 1000) {
-				frear();
-			}
-		} else if ( rpm < 800) {
-			ALERT_OFF;
-			desfreiar();
+
+		//------------------ regras em caso de falha ------------------------
+		//verifica se o sensor de rotação está funcionando
+		if ((rpm == 0) && (corrente != 0)) { //verificar se rpm realmente 0 quando para de girar
+			//lógica para avisar agente de rpm para trocar de sensor            ?????
+			//avisar supervisorio que deu pau no sensor de rpm e foi trocado    ????
+			//envia novas informações p/ supervisorio                            ???
 		}
-		if (_rpm_nao_respondeu > 1) {
+		//verifica se a usina está girando e se ela está gerando energia
+		if (((rpm > 0) && (corrente == 0)) || ((corrente > 0) && (rpm == 0))) {
+			//elices devem parar 100%
+			parar_elices();
+			//envia novas informações p/ supervisório  ?????
+		}
+		//verifica se o sensor de temperatura está funcionando
+		if ((temperatura == 0) && ((corrente !=0) || (rpm != 0))) {
+			//logica p/ avisar agente de temperatura para trocar sensor           ????
+			//avisar supervisorio que deu pau no sensor de rpm e foi trocado       ????
+			//envia novas informações p/ supervisorio                          ????
+		}
+		//verifica se o valor da temperatura está dentro do normal
+		if (temperatura > TEMP_MAXIMA) {
+			//frear elices
+			frear();
+			//envi anovas informações p/ supervisório     ?????
+		}
+		//verifica a velocidade da rotação
+		if (rpm > RPM_MAXIMO) {
+			//frear elices
+			frear();
+			//envia novas informações ao supervisório    ?????
+		}
+		//verificar correia rotação
+		if (soltou_correia()) {
+			//deve para elices 100%
+			parar_elices();
+			//envia novas informações ao supervisorio    ?????
+		}
+		//-------------------------------------------------------------------
+
+		if (_rpm_nao_respondeu > 2) {
 			enviar_mensagem_supervisor("Sensor de RPM não está respondendo");
 		}
-		if (_temp_nao_respondeu > 1) {
+		if (_temp_nao_respondeu > 2) {
 			enviar_mensagem_supervisor("Sensor de temperatura não está respondendo");
 		}
-		if (_potencia_nao_respondeu > 1) {
+		if (_potencia_nao_respondeu > 2) {
 			enviar_mensagem_supervisor("Sensor de potência não está respodendo");
 		}
 		/////////////////////////////////////////////////////

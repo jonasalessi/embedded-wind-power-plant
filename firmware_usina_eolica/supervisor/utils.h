@@ -23,7 +23,12 @@
 
 //caracter para controle no supervisorio
 #define CHAR_O '#'
-
+//temperatura
+#define TEMP_MAXIMA 30  //verificar
+#define TEMP_MINIMA 20  //verificar
+//RPM
+#define RPM_MAXIMO  800  //verificar
+#define RPM_MINIMO  600  //verificar
 ///freio
 #define FREIO_MAX 2300
 #define FREIO_MIN 999
@@ -31,7 +36,7 @@
 #define ALERT_ON PORTD |= (1 << PD7)
 #define ALERT_OFF PORTD &= ~(1 << PD7)
 // DEBUG
-#define DEBUG 1
+#define DEBUG 0
 
 //-----------------------------------------------------------
 

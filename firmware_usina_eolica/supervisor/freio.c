@@ -28,10 +28,13 @@ void inicializarFreio() {
  * 180= 2.5ms  -> 4999
  */
 void frear() {
-	OCR1A = FREIO_MAX;
+	OCR1A = (FREIO_MAX / 2);
 }
 
 void desfreiar(){
 	OCR1A=FREIO_MIN;
 }
 
+void parar_elices() {
+	OCR1A = FREIO_MAX;
+}
