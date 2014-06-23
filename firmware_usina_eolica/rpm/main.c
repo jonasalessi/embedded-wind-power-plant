@@ -2,15 +2,18 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <stdio.h>
-#include "uart.h"
+
+///1 ativa DEBUG na serial. 0 desativa DEBUG na serial
+#define DEBUG 0
+#if DEBUG
+	#include "uart.h"
+#endif
 
 #define	set_bit(Y,bit_x) (Y|=(1<<bit_x))	//ativa o bit
 #define	clr_bit(Y,bit_x) (Y&=~(1<<bit_x))	//limpa o bit
 #define tst_bit(Y,bit_x) (Y&(1<<bit_x))  	//testa o bit
 #define cpl_bit(Y,bit_x) (Y^=(1<<bit_x))	//troca o estado do bit
 
-///1 ativa DEBUG na serial. 0 desativa DEBUG na serial
-#define DEBUG 0
 #define SENSOR1 PD2			//A
 #define SENSOR2 PD3			//B
 #define MOSI     PB3		//entrada
@@ -22,6 +25,7 @@ unsigned long counter = 0;
 unsigned long milisegundos = 0;
 uint16_t rpm = 0;
 uint16_t contagem_zero = 0;
+char sensor_ativo = 'A';
 
 //controle do SPI slave
 unsigned char buffer[7];
@@ -30,7 +34,9 @@ uint8_t init = 0;
 
 void calcular_RPM();
 void spi_init_slave();
-void ativar_sensor_reserva();
+void ativar_sensorB();
+void ativar_sensorA();
+void zerar();
 
 int main() {
 	spi_init_slave();
@@ -58,9 +64,21 @@ int main() {
 	while (1);
 }
 
-void ativar_sensor_reserva() {
+void ativar_sensorA() {
+	clr_bit(EIMSK, INT1);
+	set_bit(EIMSK, INT0);
+	zerar();
+	sensor_ativo = 'A';
+}
+
+void ativar_sensorB() {
 	set_bit(EIMSK, INT1);
 	clr_bit(EIMSK, INT0);
+	zerar();
+	sensor_ativo = 'B';
+}
+
+void zerar() {
 	milisegundos = 0;
 	contagem_zero = 0;
 }
@@ -85,30 +103,44 @@ ISR(SPI_STC_vect) {
 	if (SPDR == 'I') {
 		buffer[0] = '[';
 		buffer[1] = 'R';
-		buffer[2] = 'A';
+		buffer[2] = sensor_ativo;
 		buffer[3] = ',';
 		buffer[4] = (unsigned char) rpm;
 		buffer[5] = (unsigned char)(rpm >> 8);
 		buffer[6] = ']';
 		init = 1;
+		if (rpm < 0 || rpm > 1500) {
+			if (sensor_ativo == 'A') {
+				ativar_sensorB();
+			} else {
+				ativar_sensorA();
+			}
+		}
+
 #if DEBUG
 		char out[sizeof(uint16_t)];
 		sprintf(out, "%d", rpm);
+		uart_sendSTR("Sensor "); uart_send(sensor_ativo);
 		uart_sendSTR(" RPM "); uart_sendSTR(out);
 		uart_sendSTR(" I ");
 #endif
+
 	} else if (init) {
 		SPDR = (buffer[count]);
+
 #if DEBUG
 		uart_send(buffer[count]);
 #endif
+
 		count++;
 		if (count == 7) {
 			init = 0;
 			count = 0;
+
 #if DEBUG
 			uart_sendSTR(" FIM\n");
 #endif
+
 		}
 	}
 }

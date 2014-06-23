@@ -19,16 +19,20 @@
 #define MISO     PB4//saida
 #define SCK      PB5//entrada
 #define DDR_SPI  DDRB
+#define SIZE_BUFFER 7
 
 void spi_init_slave();
 void adc_init();
 uint16_t adc_read(uint8_t ch);
 void init_IO();
-void ler_tensao_corrente();
+void ler_temperatura();
+void trocar_sensor();
+char sensor_ativo();
 
-unsigned char buffer[7];
+char buffer[SIZE_BUFFER];
 uint16_t count = 0;
 uint8_t init = 0;
+uint8_t sensor = 0;
 
 int main(void) {
 	init_IO();
@@ -48,7 +52,7 @@ ISR(SPI_STC_vect) {
 #if DEBUG
 		uart_sendSTR("I ");
 #endif
-		ler_tensao_corrente();
+		ler_temperatura();
 		init = 1;
 		SPDR = 0xFF;
 	} else if (init){
@@ -57,7 +61,7 @@ ISR(SPI_STC_vect) {
 		uart_send(buffer[count]);
 #endif
 		count++;
-		if (count == 7) {
+		if (count == SIZE_BUFFER) {
 			init = 0;
 			count = 0;
 #if DEBUG
@@ -68,6 +72,20 @@ ISR(SPI_STC_vect) {
 	sei();
 }
 
+void trocar_sensor() {
+	if (sensor == 0) {
+		sensor = 1;
+		return;
+	}
+	sensor = 0;
+}
+
+char sensor_ativo() {
+	if (sensor == 1) {
+		return 'B';
+	}
+	return 'A';
+}
 //Metodo para iniciar como slave
 void spi_init_slave(){
 	DDR_SPI = (1 << MISO);
@@ -76,10 +94,7 @@ void spi_init_slave(){
 
 void adc_init()
 {
-	// AREF = AVcc
 	ADMUX = (1<<REFS0);
-	// ADC Enable and prescaler of 128
-	// 16000000/128 = 125000
 	ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
 }
 uint16_t adc_read(uint8_t ch)
@@ -99,18 +114,25 @@ void init_IO() {
 	adc_init();
 }
 
-void ler_tensao_corrente() {
-	uint16_t saida_adc = adc_read(0);
+void ler_temperatura() {
+	uint16_t saida_adc = adc_read(sensor);
 	//int index = 0;
 	char low = (char)saida_adc;
 	char high = saida_adc >> 8;
 	//envia um lixo para gerar clock
 	//spi_transmit(0xFF);
-	buffer[0] = ('['); //inicia o pacote dos dados
-	buffer[1] = ('T');
-	buffer[2] = ('A'); //identificador de qual sensor está funcionando
-	buffer[3] = (',');//separador da identificação + valores
-	buffer[4] = (low);
-	buffer[5] = (high);
-	buffer[6] = (']'); // finaliza o pacote de dados
+	buffer[0] = '['; //inicia o pacote dos dados
+	buffer[1] = 'T';
+	 //identificador de qual sensor está funcionando
+	buffer[2] = sensor_ativo();
+	buffer[3] = ',';//separador da identificação + valores
+	buffer[4] = low;
+	buffer[5] = high;
+	buffer[6] = ']'; // finaliza o pacote de dados
+
+	//converte para grau celsius
+	uint16_t saida = (saida_adc * 100.0 * 5.0) /1023.0;
+	if (saida  > 100 || saida <= 0) {
+		trocar_sensor();
+	}
 }

@@ -12,7 +12,7 @@ unsigned char buffer_potencia[SIZE_BUFFER_POTENCIA];
 //-------------------
 //---- Temperatura ------
 uint16_t temp_nao_respondeu = 0;
-unsigned char buffer_temperatura[SIZE_BUFFER_TEMPERATURA];
+char buffer_temperatura[SIZE_BUFFER_TEMPERATURA];
 
 //----- RPM -------
 uint16_t rpm_nao_respondeu = 0;

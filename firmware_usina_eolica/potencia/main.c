@@ -25,7 +25,7 @@ void spi_init_slave();
 void adc_init();
 uint16_t adc_read(uint8_t ch);
 void init_IO();
-void ler_tensao_corrente();
+void ler_temperatura();
 
 unsigned char buffer[8];
 uint16_t count = 0;
@@ -48,7 +48,7 @@ ISR(SPI_STC_vect) {
 #if DEBUG
 		uart_sendSTR("I ");
 #endif
-		ler_tensao_corrente();
+		ler_temperatura();
 		init = 1;
 		SPDR = 0xFF;
 	} else if (init){
@@ -97,7 +97,7 @@ void init_IO() {
 	adc_init();
 }
 
-void ler_tensao_corrente() {
+void ler_temperatura() {
 	uint16_t saida_adc = adc_read(0);
 	//int index = 0;
 	unsigned char low0 = (unsigned char)saida_adc;
