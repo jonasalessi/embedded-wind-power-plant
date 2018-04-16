@@ -1,4 +1,4 @@
-embedded
+Firmware for wind power plant
 ========
 
-Applications embedded
+Work of the discipline of hardware and software integration. In this work, a firmware was created to control a wind power plant.
